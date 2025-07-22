@@ -1,7 +1,7 @@
 import os
 import csv
 
-# Absolute paths from the ml_model folder
+
 contracts_dir = os.path.join(os.path.dirname(__file__), "../data/raw_contracts")
 output_csv = os.path.join(os.path.dirname(__file__), "../data/processed_contracts/labeled_data.csv")
 
@@ -30,4 +30,4 @@ with open(output_csv, "w", newline="", encoding="utf-8") as f:
     writer.writerow(["code", "label"])
     writer.writerows(data)
 
-print(f"✅ Done. Saved {len(data)} contracts to labeled_data.csv")
+print(f"Done. Saved {len(data)} contracts to labeled_data.csv")

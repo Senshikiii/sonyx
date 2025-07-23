@@ -2,10 +2,19 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import joblib
 import os
-
+from fastapi.middleware.cors import CORSMiddleware
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 app = FastAPI()
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # You can set this to your domain later
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load your trained model + vectorizer
 MODEL_PATH = "../ml_model/vuln_classifier_model.pkl"
@@ -14,7 +23,6 @@ VECTORIZER_PATH = "../ml_model/tfidf_vectorizer.pkl"
 model = joblib.load(MODEL_PATH)
 vectorizer = joblib.load(VECTORIZER_PATH)
 
-# Define input schema
 class CodeInput(BaseModel):
     code: str
 
@@ -30,5 +38,4 @@ def predict(input: CodeInput):
     
 
 
-
-
+    

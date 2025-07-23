@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Smart Contract Auditor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+            width: 100%;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        .risk-high { background: #ffe6e6; border-left: 5px solid #dc3545; }
+        .risk-medium { background: #fff3cd; border-left: 5px solid #ffc107; }
+        .risk-low { background: #d4edda; border-left: 5px solid #28a745; }
+        .risk-unknown { background: #f8f9fa; border-left: 5px solid #6c757d; }
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        .vulnerability {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 3px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Sonyx An AI Smart Contract Auditor</h1>
+        <p class="subtitle">Paste your Solidity code → AI scans it → Get vulnerability report</p>
+        
+        <textarea id="code-input" placeholder="pragma solidity ^0.8.0;
+
+contract MyContract {
+    // Paste your Solidity code here...
+}"></textarea>
+        
+        <button onclick="analyzeCode()" id="analyze-btn">🚀 Analyze Contract</button>
+        
+        <div id="results" class="results">
+            <h3>📊 Analysis Results</h3>
+            <div id="risk-score"></div>
+            <div id="vulnerabilities"></div>
+            <div id="recommendations"></div>
+        </div>
+    </div>
+
+    <script>
+        async function analyzeCode() {
+            const code = document.getElementById('code-input').value.trim();
+            const resultsDiv = document.getElementById('results');
+            const button = document.getElementById('analyze-btn');
+            
+            if (!code) {
+                alert('Please paste some Solidity code first!');
+                return;
+            }
+            
+            // Show loading state
+            button.disabled = true;
+            button.textContent = '🔄 Analyzing...';
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<div class="loading">🤖 AI is scanning your contract...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:8010/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code: code })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Analysis failed');
+                }
+                
+                const result = await response.json();
+                displayResults(result);
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="vulnerability">
+                        <strong>❌ Error:</strong> ${error.message}
+                        <br><small>Make sure your backend is running on http://localhost:8000</small>
+                    </div>
+                `;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Analyze Contract';
+            }
+        }
+        
+        function displayResults(result) {
+            const resultsDiv = document.getElementById('results');
+            
+            // Determine risk level
+            const vulnerability = result.vulnerability || 'UNKNOWN';
+            let riskLevel = 'unknown';
+            let riskText = 'Unknown Risk';
+            
+            if (['REENTRANCY', 'INTEGER_OVERFLOW', 'UNCHECKED_EXTERNAL_CALLS'].includes(vulnerability)) {
+                riskLevel = 'high';
+                riskText = 'High Risk';
+            } else if (['ACCESS_CONTROL', 'TIMESTAMP_DEPENDENCE'].includes(vulnerability)) {
+                riskLevel = 'medium';  
+                riskText = 'Medium Risk';
+            } else if (vulnerability === 'SAFE') {
+                riskLevel = 'low';
+                riskText = 'Low Risk';
+            }
+            
+            resultsDiv.className = `results risk-${riskLevel}`;
+            resultsDiv.innerHTML = `
+                <h3>📊 Analysis Results</h3>
+                <div style="font-size: 18px; margin-bottom: 15px;">
+                    <strong>Risk Level: ${riskText}</strong>
+                </div>
+                <div class="vulnerability">
+                    <strong>🔍 Detected Issue:</strong> ${vulnerability.replace('_', ' ')}
+                    <br><small>Confidence: ${result.confidence || 'N/A'}</small>
+                </div>
+                <div style="margin-top: 15px;">
+                    <strong>💡 Recommendations:</strong>
+                    <ul>
+                        <li>Review the flagged vulnerability type</li>
+                        <li>Consider using established security patterns</li>
+                        <li>Test thoroughly before deployment</li>
+                    </ul>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

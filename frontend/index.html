@@ -83,7 +83,12 @@
     <h1>🔍 Sonyx — AI Smart Contract Auditor</h1>
     <p class="subtitle">Paste your Solidity contract → Get instant AI vulnerability scan</p>
 
-    <textarea id="code-input" placeholder="pragma solidity ^0.8.0;\n\ncontract MyContract {\n    // Paste your Solidity code here...\n}"></textarea>
+    <textarea id="code-input" style="white-space: pre;">pragma solidity ^0.8.0;
+
+contract MyContract {
+    // Paste your Solidity code here...
+}
+</textarea>
     <button id="analyze-btn" onclick="analyzeCode()">🚀 Analyze Contract</button>
 
     <div id="results" class="results"></div>

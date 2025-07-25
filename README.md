@@ -1,6 +1,6 @@
 🔍 Sonyx — AI Smart Contract Auditor
 
-Live Demo: https://sonyx-nu.vercel.appBackend API: https://sonyx-3.onrender.com
+Live Demo: https://sonyx-nu.vercel.app        Backend API: https://sonyx-3.onrender.com
 
 Sonyx is an open-source AI-powered smart contract auditor built in 72 hours for a hackathon. It scans Solidity contracts and predicts potential vulnerabilities using a trained machine learning model.
 

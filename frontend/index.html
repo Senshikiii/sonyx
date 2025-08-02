@@ -5,96 +5,533 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AI Smart Contract Auditor</title>
   <style>
+    :root {
+      /* Premium light theme colors */
+      --bg-primary: #fafbfc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f6f8fa;
+      --text-primary: #0d1117;
+      --text-secondary: #656d76;
+      --text-muted: #8b949e;
+      --border-color: #d1d9e0;
+      --accent-primary: #0969da;
+      --accent-hover: #0550ae;
+      --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08);
+      --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.12), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+      --shadow-lg: 0 16px 24px -4px rgb(0 0 0 / 0.15), 0 8px 16px -8px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 24px 48px -12px rgb(0 0 0 / 0.18), 0 12px 24px -12px rgb(0 0 0 / 0.12);
+      
+      /* Premium risk colors */
+      --risk-high-bg: #fff5f5;
+      --risk-high-border: #e53e3e;
+      --risk-medium-bg: #fffaf0;
+      --risk-medium-border: #dd6b20;
+      --risk-low-bg: #f0fff4;
+      --risk-low-border: #38a169;
+      --risk-unknown-bg: #f7fafc;
+      --risk-unknown-border: #718096;
+    }
+
+    [data-theme="dark"] {
+      /* True dark theme colors */
+      --bg-primary: #000000;
+      --bg-secondary: #111111;
+      --bg-tertiary: #1a1a1a;
+      --text-primary: #ffffff;
+      --text-secondary: #cccccc;
+      --text-muted: #888888;
+      --border-color: #333333;
+      --accent-primary: #00d4ff;
+      --accent-hover: #00b8e6;
+      --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.5);
+      --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.6), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+      --shadow-lg: 0 16px 24px -4px rgb(0 0 0 / 0.7), 0 8px 16px -8px rgb(0 0 0 / 0.5);
+      --shadow-xl: 0 24px 48px -12px rgb(0 0 0 / 0.8), 0 12px 24px -12px rgb(0 0 0 / 0.6);
+      
+      /* Dark risk colors with better contrast */
+      --risk-high-bg: #1a0606;
+      --risk-high-border: #ff4757;
+      --risk-medium-bg: #1a1306;
+      --risk-medium-border: #ffa502;
+      --risk-low-bg: #061a0b;
+      --risk-low-border: #2ed573;
+      --risk-unknown-bg: #1a1a1a;
+      --risk-unknown-border: #747d8c;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      max-width: 1000px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: var(--bg-primary);
+      background-image: 
+        radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(0, 212, 255, 0.03) 0%, transparent 50%);
+      color: var(--text-primary);
+      line-height: 1.6;
+      transition: all 0.4s ease;
+      min-height: 100vh;
+      padding: 1rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.02) 50%, transparent 100%),
+        linear-gradient(45deg, transparent 0%, rgba(139, 92, 246, 0.02) 50%, transparent 100%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .app {
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 20px;
-      background-color: #f5f5f5;
+      padding: 2rem 0;
     }
+
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      background: var(--bg-secondary);
+      backdrop-filter: blur(10px) saturate(180%);
+      border: 1px solid var(--border-color);
+      border-radius: 50px;
+      padding: 0.75rem;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      width: 3.5rem;
+      height: 3.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      z-index: 1000;
+    }
+
+    .theme-toggle:hover {
+      transform: translateY(-3px) scale(1.1);
+      box-shadow: var(--shadow-lg), 0 8px 25px -8px rgba(59, 130, 246, 0.3);
+      border-color: var(--accent-primary);
+    }
+
+    .theme-toggle:active {
+      transform: translateY(-1px) scale(1.05);
+    }
+
     .container {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      background: var(--bg-secondary);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-radius: 28px;
+      box-shadow: var(--shadow-xl), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--border-color);
+      padding: 3.5rem;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
     }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+      opacity: 0.6;
+    }
+
+    .container:hover {
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: var(--shadow-xl), 0 32px 64px -12px rgba(0, 0, 0, 0.25);
+    }
+
     h1 {
-      text-align: center;
-      color: #333;
+      font-size: 3rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent-primary), #00d4ff, #8b5cf6);
+      background-size: 200% 200%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+      letter-spacing: -0.03em;
+      animation: gradientShift 6s ease-in-out infinite;
+      text-shadow: 0 0 40px rgba(59, 130, 246, 0.3);
     }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
     .subtitle {
-      text-align: center;
-      color: #666;
-      margin-bottom: 20px;
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      font-weight: 400;
     }
+
+    .input-section {
+      position: relative;
+      margin-bottom: 2rem;
+    }
+
+    .input-label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.75rem;
+      font-size: 1.1rem;
+    }
+
     textarea {
       width: 100%;
-      height: 300px;
-      padding: 15px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-family: monospace;
+      height: 380px;
+      padding: 2rem;
+      border: 2px solid var(--border-color);
+      border-radius: 20px;
+      font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
       font-size: 14px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      resize: vertical;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      line-height: 1.6;
+      box-shadow: var(--shadow-sm), inset 0 1px 2px rgba(0, 0, 0, 0.05);
+      position: relative;
     }
-    button {
-      background-color: #007bff;
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12), var(--shadow-md);
+      transform: translateY(-3px) scale(1.01);
+      background: var(--bg-secondary);
+    }
+
+    textarea:hover:not(:focus) {
+      border-color: var(--accent-primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .analyze-button {
+      background: linear-gradient(135deg, var(--accent-primary), #00d4ff, #8b5cf6);
+      background-size: 200% 200%;
       color: white;
-      padding: 15px;
+      padding: 1.25rem 2rem;
       border: none;
-      border-radius: 5px;
-      font-size: 16px;
+      border-radius: 20px;
+      font-size: 1.1rem;
+      font-weight: 700;
       width: 100%;
-      margin-top: 15px;
       cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      animation: buttonGradient 4s ease-in-out infinite;
     }
-    button:hover {
-      background-color: #0056b3;
+
+    @keyframes buttonGradient {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
     }
-    button:disabled {
-      background-color: #cccccc;
+
+    .analyze-button:hover:not(:disabled) {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: var(--shadow-xl), 0 20px 40px -8px rgba(59, 130, 246, 0.4);
+      animation-duration: 2s;
+    }
+
+    .analyze-button:active {
+      transform: translateY(-2px) scale(1.01);
+    }
+
+    .analyze-button:disabled {
+      opacity: 0.5;
       cursor: not-allowed;
+      transform: none;
+      animation: none;
     }
+
+    .analyze-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.6s ease;
+    }
+
+    .analyze-button:hover:not(:disabled)::before {
+      left: 100%;
+    }
+
+    .analyze-button::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      padding: 2px;
+      background: linear-gradient(135deg, var(--accent-primary), #00d4ff, #8b5cf6);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
     .results {
-      margin-top: 25px;
+      margin-top: 2rem;
       display: none;
-      padding: 20px;
-      border-radius: 8px;
+      padding: 2rem;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      transition: all 0.3s ease;
+      animation: slideIn 0.5s ease-out;
     }
-    .risk-high { background-color: #ffe6e6; border-left: 5px solid #dc3545; }
-    .risk-medium { background-color: #fff3cd; border-left: 5px solid #ffc107; }
-    .risk-low { background-color: #d4edda; border-left: 5px solid #28a745; }
-    .risk-unknown { background-color: #f8f9fa; border-left: 5px solid #6c757d; }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .risk-high { 
+      background: var(--risk-high-bg);
+      border-left: 4px solid var(--risk-high-border);
+    }
+    
+    .risk-medium { 
+      background: var(--risk-medium-bg);
+      border-left: 4px solid var(--risk-medium-border);
+    }
+    
+    .risk-low { 
+      background: var(--risk-low-bg);
+      border-left: 4px solid var(--risk-low-border);
+    }
+    
+    .risk-unknown { 
+      background: var(--risk-unknown-bg);
+      border-left: 4px solid var(--risk-unknown-border);
+    }
+
     .loading {
       text-align: center;
-      font-style: italic;
-      color: #555;
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
     }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border-color);
+      border-top: 2px solid var(--accent-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .results-header {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      color: var(--text-primary);
+    }
+
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
     .vulnerability {
-      margin-top: 10px;
-      background-color: #f8f9fa;
-      padding: 10px;
-      border-radius: 5px;
-      border-left: 3px solid #dc3545;
+      background: var(--bg-tertiary);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      margin: 1rem 0;
+    }
+
+    .vulnerability-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .recommendations {
+      margin-top: 1.5rem;
+    }
+
+    .recommendations h4 {
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+
+    .recommendations ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .recommendations li {
+      padding: 0.5rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+      color: var(--text-secondary);
+    }
+
+    .recommendations li::before {
+      content: '💡';
+      position: absolute;
+      left: 0;
+    }
+
+    @media (max-width: 768px) {
+      .app {
+        padding: 1rem 0;
+      }
+      
+      .container {
+        padding: 2rem;
+        margin: 0 1rem;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .theme-toggle {
+        top: 1rem;
+        right: 1rem;
+      }
+      
+      textarea {
+        height: 250px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🔍 Sonyx — AI Smart Contract Auditor</h1>
-    <p class="subtitle">Paste your Solidity contract → Get instant AI vulnerability scan</p>
+  <div class="app">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">
+      <span id="theme-icon">🌙</span>
+    </button>
+    
+    <div class="container">
+      <div class="header">
+        <h1>🔍 Sonyx — AI Smart Contract Auditor</h1>
+        <p class="subtitle">Paste your Solidity contract → Get instant AI vulnerability scan</p>
+      </div>
 
-    <textarea id="code-input" style="white-space: pre;">pragma solidity ^0.8.0;
+      <div class="input-section">
+        <label class="input-label" for="code-input">Smart Contract Code</label>
+        <textarea id="code-input" placeholder="pragma solidity ^0.8.0;
 
 contract MyContract {
     // Paste your Solidity code here...
-}
-</textarea>
-    <button id="analyze-btn" onclick="analyzeCode()">🚀 Analyze Contract</button>
+    // The AI will analyze it for common vulnerabilities like:
+    // • Reentrancy attacks
+    // • Integer overflow/underflow
+    // • Access control issues
+    // • And more...
+}">pragma solidity ^0.8.0;
 
-    <div id="results" class="results"></div>
+contract MyContract {
+    // Paste your Solidity code here...
+}</textarea>
+      </div>
+      
+      <button id="analyze-btn" class="analyze-button" onclick="analyzeCode()">
+        🚀 Analyze Contract
+      </button>
+
+      <div id="results" class="results"></div>
+    </div>
   </div>
 
   <script>
+    // Theme management
+    function toggleTheme() {
+      const html = document.documentElement;
+      const themeIcon = document.getElementById('theme-icon');
+      const currentTheme = html.getAttribute('data-theme');
+      
+      if (currentTheme === 'dark') {
+        html.removeAttribute('data-theme');
+        themeIcon.textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.setAttribute('data-theme', 'dark');
+        themeIcon.textContent = '☀️';
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    // Initialize theme on page load
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const themeIcon = document.getElementById('theme-icon');
+      
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        themeIcon.textContent = '☀️';
+      } else {
+        themeIcon.textContent = '🌙';
+      }
+    }
+
     async function analyzeCode() {
       const code = document.getElementById('code-input').value.trim();
       const resultsDiv = document.getElementById('results');
@@ -107,7 +544,11 @@ contract MyContract {
 
       resultsDiv.style.display = "block";
       resultsDiv.className = "results";
-      resultsDiv.innerHTML = `<div class="loading">🔄 Scanning smart contract for vulnerabilities...</div>`;
+      resultsDiv.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          Scanning smart contract for vulnerabilities...
+        </div>`;
       button.disabled = true;
       button.textContent = "Analyzing...";
 
@@ -125,10 +566,12 @@ contract MyContract {
         const result = await response.json();
         displayResults(result);
       } catch (error) {
+        resultsDiv.className = "results risk-high";
         resultsDiv.innerHTML = `
           <div class="vulnerability">
-            ❌ <strong>Error:</strong> ${error.message}<br>
-            <small>Ensure your backend is running at <code>http://localhost:8000</code></small>
+            <div class="vulnerability-title">❌ Connection Error</div>
+            <p><strong>Error:</strong> ${error.message}</p>
+            <p><small>Make sure the backend server is running and accessible.</small></p>
           </div>`;
       } finally {
         button.disabled = false;
@@ -142,36 +585,79 @@ contract MyContract {
 
       let riskLevel = 'unknown';
       let riskText = 'Unknown Risk';
+      let riskIcon = '❓';
+      let riskDescription = 'The analysis could not determine a specific vulnerability type.';
 
-      if (["REENTRANCY", "INTEGER_OVERFLOW", "UNCHECKED_EXTERNAL_CALLS"].includes(vulnerability)) {
+      // Enhanced vulnerability mapping
+      if (["REENTRANCY"].includes(vulnerability)) {
         riskLevel = 'high';
         riskText = 'High Risk';
-      } else if (["ACCESS_CONTROL", "TIMESTAMP_DEPENDENCE"].includes(vulnerability)) {
+        riskIcon = '🚨';
+        riskDescription = 'Reentrancy vulnerabilities allow attackers to repeatedly call functions before state updates complete.';
+      } else if (["INTEGER_OVERFLOW", "ARITHMETIC"].includes(vulnerability)) {
+        riskLevel = 'high';
+        riskText = 'High Risk';
+        riskIcon = '⚠️';
+        riskDescription = 'Arithmetic vulnerabilities can lead to unexpected behavior in calculations.';
+      } else if (["UNCHECKED_EXTERNAL_CALLS", "UNCHECKED_CALL"].includes(vulnerability)) {
+        riskLevel = 'high';
+        riskText = 'High Risk';
+        riskIcon = '🔴';
+        riskDescription = 'Unchecked external calls can fail silently and lead to unexpected behavior.';
+      } else if (["ACCESS_CONTROL"].includes(vulnerability)) {
         riskLevel = 'medium';
         riskText = 'Medium Risk';
+        riskIcon = '🔒';
+        riskDescription = 'Access control issues can allow unauthorized users to execute restricted functions.';
+      } else if (["BAD_RANDOMNESS", "TIMESTAMP_DEPENDENCE"].includes(vulnerability)) {
+        riskLevel = 'medium';
+        riskText = 'Medium Risk';
+        riskIcon = '🎲';
+        riskDescription = 'Weak randomness or timestamp dependence can be exploited by miners or attackers.';
+      } else if (["DOS", "DENIAL_OF_SERVICE"].includes(vulnerability)) {
+        riskLevel = 'medium';
+        riskText = 'Medium Risk';
+        riskIcon = '🛑';
+        riskDescription = 'Denial of service vulnerabilities can make your contract unusable.';
+      } else if (["FRONT_RUNNING"].includes(vulnerability)) {
+        riskLevel = 'medium';
+        riskText = 'Medium Risk';
+        riskIcon = '🏃';
+        riskDescription = 'Front-running vulnerabilities allow attackers to profit from transaction ordering.';
       } else if (vulnerability === "SAFE") {
         riskLevel = 'low';
         riskText = 'Low Risk';
+        riskIcon = '✅';
+        riskDescription = 'No major vulnerabilities detected in this contract.';
       }
 
       resultsDiv.className = `results risk-${riskLevel}`;
       resultsDiv.innerHTML = `
-        <h3>📊 Analysis Results</h3>
-        <p><strong>Risk Level:</strong> ${riskText}</p>
+        <div class="results-header">${riskIcon} Analysis Results</div>
+        <div class="risk-badge">${riskIcon} ${riskText}</div>
+        
         <div class="vulnerability">
-          <strong>🔍 Detected Issue:</strong> ${vulnerability.replace('_', ' ')}
-          <br><small>Confidence: ${result.confidence || "N/A"}</small>
+          <div class="vulnerability-title">🔍 Detected Issue: ${vulnerability.replace(/_/g, ' ')}</div>
+          <p>${riskDescription}</p>
+          ${result.confidence ? `<p><small><strong>Confidence:</strong> ${result.confidence}</small></p>` : ''}
         </div>
-        <div style="margin-top: 10px;">
-          <strong>💡 Recommendations:</strong>
+        
+        <div class="recommendations">
+          <h4>💡 Security Recommendations</h4>
           <ul>
-            <li>Review the vulnerability type and context</li>
-            <li>Use OpenZeppelin libraries and design patterns</li>
-            <li>Perform thorough unit and fuzz testing</li>
+            <li>Review the identified vulnerability pattern in your code</li>
+            <li>Use established security libraries like OpenZeppelin</li>
+            <li>Implement proper access controls and input validation</li>
+            <li>Consider using reentrancy guards for external calls</li>
+            <li>Perform comprehensive testing including edge cases</li>
+            <li>Get a professional security audit before mainnet deployment</li>
           </ul>
         </div>
       `;
     }
+
+    // Initialize theme when page loads
+    document.addEventListener('DOMContentLoaded', initTheme);
   </script>
 </body>
 </html>
